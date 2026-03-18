@@ -39,4 +39,4 @@ if __name__ == "__main__":
         print(f"Pushing update: {data}")
         p.produce("railway-updates", value=json.dumps(data))
         p.flush()
-        time.sleep(5)  # Update every 5 seconds
+        time.sleep(10)  # Faster updates for debugging (10 seconds)
