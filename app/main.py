@@ -71,3 +71,9 @@ def search_pnr(pnr: str):
 def publish(data: dict, token=Depends(verify_token)):
     send_event(data)
     return {"msg":"sent"}
+
+@app.post("/submit-alert")
+def submit_alert(data: dict):
+    # Public endpoint for demo simulation
+    send_event(data)
+    return {"status": "event_published"}
