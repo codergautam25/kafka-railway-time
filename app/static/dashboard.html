@@ -246,6 +246,36 @@
         #railway-alerts::-webkit-scrollbar-thumb:hover {
             background: rgba(56, 189, 248, 0.3);
         }
+        .inquiry-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+            color: #f8fafc;
+        }
+        .inquiry-table th {
+            text-align: left;
+            padding: 0.75rem;
+            color: #64748b;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .inquiry-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            font-size: 0.95rem;
+        }
+        .inquiry-table tr:last-child td {
+            border-bottom: none;
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -513,14 +543,18 @@
                 container.style.fontStyle = 'normal';
                 container.style.border = 'none';
                 container.innerHTML = `
-                    <div style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--accent-color); padding: 1rem; border-radius: 0.5rem;">
-                        <div style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; color: #f8fafc;">${data.train_name || 'Train ' + trainNo}</div>
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
-                            <div style="color: #94a3b8;">${data.source} ➔ ${data.destination}</div>
-                            <div>Currently at: <b style="color: white;">${data.station}</b></div>
-                            <div>Status: <span style="color: ${data.delay_mins > 0 ? '#ef4444' : '#22c55e'}; font-weight: bold;">${data.delay_mins > 0 ? data.delay_mins + ' mins late' : 'On Time'}</span></div>
-                            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">Last indexed: ${new Date(parseFloat(data.timestamp)*1000).toLocaleTimeString()}</div>
-                        </div>
+                    <div style="background: rgba(56, 189, 248, 0.05); padding: 1.25rem; border-radius: 1rem; border: 1px solid rgba(56, 189, 248, 0.2);">
+                        <table class="inquiry-table">
+                            <tr><th>Train Name</th><td style="font-weight: 800; color: var(--accent-color);">${data.train_name || 'Train ' + trainNo}</td></tr>
+                            <tr><th>Route</th><td>${data.source} ➔ ${data.destination}</td></tr>
+                            <tr><th>Current Station</th><td style="font-weight: 700;">${data.station}</td></tr>
+                            <tr><th>Status</th><td>
+                                <span class="status-pill" style="background: ${data.delay_mins > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}; color: ${data.delay_mins > 0 ? '#ef4444' : '#22c55e'};">
+                                    ${data.delay_mins > 0 ? data.delay_mins + ' mins late' : 'On Time'}
+                                </span>
+                            </td></tr>
+                            <tr><th>Last Update</th><td style="color: #64748b; font-size: 0.8rem;">${new Date(parseFloat(data.timestamp)*1000).toLocaleTimeString()}</td></tr>
+                        </table>
                     </div>
                 `;
             } catch (e) {
@@ -544,22 +578,21 @@
                 container.style.border = 'none';
                 
                 const statusColor = data.status === 'CONFIRMED' ? '#22c55e' : (data.status === 'CANCELLED' ? '#ef4444' : '#f59e0b');
+                const statusBg = data.status === 'CONFIRMED' ? 'rgba(34, 197, 94, 0.2)' : (data.status === 'CANCELLED' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)');
                 
                 container.innerHTML = `
-                    <div style="background: rgba(129, 140, 248, 0.1); border-left: 4px solid #818cf8; padding: 1rem; border-radius: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <div style="font-weight: 800; font-size: 1.1rem; color: #f8fafc;">PNR: ${data.pnr}</div>
-                            <div style="background: ${statusColor}; color: #0f172a; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 800;">${data.status}</div>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.9rem;">
-                            <div style="color: #94a3b8;">Train No: <span style="color: white;">${data.train_no}</span></div>
-                            <div style="color: #94a3b8;">Passengers: <span style="color: white;">${data.passenger_count}</span></div>
-                            <div style="color: #94a3b8;">Coach/Berth: <span style="color: white;">${data.coach} / ${data.berth}</span></div>
-                            <div style="color: #94a3b8;">Charts: <span style="color: white;">${data.chart_status}</span></div>
-                        </div>
-                        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; color: #22c55e; font-weight: 600;">
-                            ✓ Seat availability verified for this PNR
-                        </div>
+                    <div style="background: rgba(129, 140, 248, 0.05); padding: 1.25rem; border-radius: 1rem; border: 1px solid rgba(129, 140, 248, 0.2);">
+                        <table class="inquiry-table">
+                            <tr><th>PNR Number</th><td style="font-weight: 800; color: #818cf8;">${data.pnr}</td></tr>
+                            <tr><th>Status</th><td>
+                                <span class="status-pill" style="background: ${statusBg}; color: ${statusColor};">
+                                    ${data.status}
+                                </span>
+                            </td></tr>
+                            <tr><th>Train / Passengers</th><td>${data.train_no} / ${data.passenger_count} Pax</td></tr>
+                            <tr><th>Coach / Berth</th><td style="font-weight: 600;">${data.coach} / ${data.berth}</td></tr>
+                            <tr><th>Chart Status</th><td style="color: ${data.chart_status === 'Prepared' ? '#22c55e' : '#64748b'};">${data.chart_status}</td></tr>
+                        </table>
                     </div>
                 `;
             } catch (e) {
