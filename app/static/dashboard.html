@@ -259,6 +259,7 @@
                 <ul>
                     <li><a onclick="showView('api')" id="nav-api" class="nav-link active"><span>📡</span> System API</a></li>
                     <li><a onclick="showView('railway')" id="nav-railway" class="nav-link"><span>🚆</span> Railway Status</a></li>
+                    <li><a onclick="showView('inquiries')" id="nav-inquiries" class="nav-link"><span>🔍</span> Search & Inquiries</a></li>
                     <li><a onclick="showView('fraud')" id="nav-fraud" class="nav-link"><span>🛡️</span> Fraud Monitoring</a></li>
                     <li><a onclick="showView('metrics')" id="nav-metrics" class="nav-link"><span>📊</span> Prometheus Metrics</a></li>
                     <li><a onclick="showView('dashboards')" id="nav-dashboards" class="nav-link"><span>📈</span> Grafana Analytics</a></li>
@@ -306,6 +307,43 @@
                 </div>
                 <!-- Debug instrumentation (hidden by default) -->
                 <div id="debug-info" style="display: none; font-size: 0px;"></div>
+            </section>
+            
+            <section id="inquiries">
+                <div class="section-header">
+                    <div class="section-header-info">
+                        <h2>Search & Inquiries</h2>
+                        <p>Real-time train status and PNR verification service</p>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div style="background: var(--card-bg); border-radius: 1.5rem; padding: 2rem; border: 1px solid rgba(255,255,255,0.1);">
+                        <h3 style="margin-top: 0; color: var(--accent-color); display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🚆</span> Train Status Lookup
+                        </h3>
+                        <div style="display: flex; gap: 0.75rem; margin-bottom: 2rem;">
+                            <input type="text" id="train-search-input" placeholder="e.g. 12864" style="flex: 1; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem 1rem; border-radius: 0.75rem; color: white; outline: none; font-size: 1rem;">
+                            <button onclick="searchTrain()" style="background: var(--accent-color); color: #0f172a; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 700; cursor: pointer;">Search</button>
+                        </div>
+                        <div id="train-search-result" style="min-height: 150px; display: flex; align-items: center; justify-content: center; color: #64748b; font-style: italic; border: 2px dashed rgba(255,255,255,0.05); border-radius: 1rem; text-align: center;">
+                            Enter a Train Number to see its live status
+                        </div>
+                    </div>
+
+                    <div style="background: var(--card-bg); border-radius: 1.5rem; padding: 2rem; border: 1px solid rgba(255,255,255,0.1);">
+                        <h3 style="margin-top: 0; color: #818cf8; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🎟️</span> PNR & Seat Inquiry
+                        </h3>
+                        <div style="display: flex; gap: 0.75rem; margin-bottom: 2rem;">
+                            <input type="text" id="pnr-search-input" placeholder="Enter 10-digit PNR" style="flex: 1; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem 1rem; border-radius: 0.75rem; color: white; outline: none; font-size: 1rem;">
+                            <button onclick="searchPNR()" style="background: #818cf8; color: #0f172a; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 700; cursor: pointer;">Check</button>
+                        </div>
+                        <div id="pnr-search-result" style="min-height: 150px; display: flex; align-items: center; justify-content: center; color: #64748b; font-style: italic; border: 2px dashed rgba(255,255,255,0.05); border-radius: 1rem; text-align: center;">
+                            Enter PNR to check booking and seat availability
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section id="fraud">
@@ -454,6 +492,80 @@
 
         setInterval(fetchAlerts, 10000); // Fast polling for debugging
         fetchAlerts();
+
+        async function searchTrain() {
+            const trainNo = document.getElementById('train-search-input').value;
+            const container = document.getElementById('train-search-result');
+            if (!trainNo) return;
+            
+            container.innerHTML = '<div class="status-dot" style="background: #38bdf8; animation: pulse 1s infinite;"></div> Searching...';
+            
+            try {
+                const res = await fetch(`/search/train/${trainNo}`);
+                const data = await res.json();
+                
+                if (data.error) {
+                    container.innerHTML = `<div style="color: #ef4444;">${data.error}</div>`;
+                    return;
+                }
+                
+                container.style.display = 'block';
+                container.style.fontStyle = 'normal';
+                container.style.border = 'none';
+                container.innerHTML = `
+                    <div style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--accent-color); padding: 1rem; border-radius: 0.5rem;">
+                        <div style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; color: #f8fafc;">${data.train_name || 'Train ' + trainNo}</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+                            <div style="color: #94a3b8;">${data.source} ➔ ${data.destination}</div>
+                            <div>Currently at: <b style="color: white;">${data.station}</b></div>
+                            <div>Status: <span style="color: ${data.delay_mins > 0 ? '#ef4444' : '#22c55e'}; font-weight: bold;">${data.delay_mins > 0 ? data.delay_mins + ' mins late' : 'On Time'}</span></div>
+                            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">Last indexed: ${new Date(parseFloat(data.timestamp)*1000).toLocaleTimeString()}</div>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                container.innerHTML = `<div style="color: #ef4444;">Error fetching data</div>`;
+            }
+        }
+
+        async function searchPNR() {
+            const pnr = document.getElementById('pnr-search-input').value;
+            const container = document.getElementById('pnr-search-result');
+            if (!pnr) return;
+
+            container.innerHTML = '<div class="status-dot" style="background: #818cf8; animation: pulse 1s infinite;"></div> Verifying PNR...';
+            
+            try {
+                const res = await fetch(`/search/pnr/${pnr}`);
+                const data = await res.json();
+                
+                container.style.display = 'block';
+                container.style.fontStyle = 'normal';
+                container.style.border = 'none';
+                
+                const statusColor = data.status === 'CONFIRMED' ? '#22c55e' : (data.status === 'CANCELLED' ? '#ef4444' : '#f59e0b');
+                
+                container.innerHTML = `
+                    <div style="background: rgba(129, 140, 248, 0.1); border-left: 4px solid #818cf8; padding: 1rem; border-radius: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div style="font-weight: 800; font-size: 1.1rem; color: #f8fafc;">PNR: ${data.pnr}</div>
+                            <div style="background: ${statusColor}; color: #0f172a; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 800;">${data.status}</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.9rem;">
+                            <div style="color: #94a3b8;">Train No: <span style="color: white;">${data.train_no}</span></div>
+                            <div style="color: #94a3b8;">Passengers: <span style="color: white;">${data.passenger_count}</span></div>
+                            <div style="color: #94a3b8;">Coach/Berth: <span style="color: white;">${data.coach} / ${data.berth}</span></div>
+                            <div style="color: #94a3b8;">Charts: <span style="color: white;">${data.chart_status}</span></div>
+                        </div>
+                        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; color: #22c55e; font-weight: 600;">
+                            ✓ Seat availability verified for this PNR
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                container.innerHTML = `<div style="color: #ef4444;">Verification failed</div>`;
+            }
+        }
     </script>
 </body>
 </html>

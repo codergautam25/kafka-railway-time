@@ -25,7 +25,8 @@ r = redis.Redis(host=os.getenv("REDIS_HOST", "localhost"), port=6379, db=0)
 
 @app.get("/alerts")
 def get_alerts():
-    keys = r.keys("*")
+    # Only return historical alert records (prefixed with fraud: or railway:)
+    keys = r.keys("fraud:*") + r.keys("railway:*")
     alerts = []
     for key in keys:
         try:
@@ -35,6 +36,36 @@ def get_alerts():
         except:
             pass
     return alerts
+
+@app.get("/search/train/{train_no}")
+def search_train(train_no: str):
+    data = r.get(f"train:LATEST:{train_no}")
+    if data:
+        return json.loads(data)
+    return {"error": "Train data not found or not yet indexed"}
+
+@app.get("/search/pnr/{pnr}")
+def search_pnr(pnr: str):
+    # Deterministic simulation based on PNR number
+    import hashlib
+    h = int(hashlib.md5(pnr.encode()).hexdigest(), 16)
+    
+    statuses = ["CONFIRMED", "RAC", "WL", "CANCELLED"]
+    coaches = ["A1", "B1", "B2", "S1", "S2"]
+    
+    status = statuses[h % len(statuses)]
+    coach = coaches[h % len(coaches)] if status == "CONFIRMED" else "N/A"
+    berth = (h % 72) + 1 if status == "CONFIRMED" else "N/A"
+    
+    return {
+        "pnr": pnr,
+        "status": status,
+        "coach": coach,
+        "berth": berth,
+        "train_no": ["12864", "12133", "12951"][h % 3],
+        "passenger_count": (h % 4) + 1,
+        "chart_status": "Prepared" if (h % 2 == 0) else "Not Prepared"
+    }
 
 @app.post("/event")
 def publish(data: dict, token=Depends(verify_token)):

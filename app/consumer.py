@@ -14,7 +14,7 @@ c = Consumer({
     'auto.offset.reset': 'earliest'
 })
 
-c.subscribe(["FRAUD_ALERTS", "DELAYED_ALERTS"])
+c.subscribe(["FRAUD_ALERTS", "DELAYED_ALERTS", "railway-updates"])
 
 while True:
     msg = c.poll(1.0)
@@ -29,13 +29,21 @@ while True:
         data = json.loads(msg.value().decode())
         data["_topic"] = topic
         
-        # Use unique key for Redis (history with 10min TTL)
+        # 1. Update Latest Status Index (from all updates)
+        if topic == "railway-updates":
+            train_no = data.get('train_no', 'unknown')
+            r.set(f"train:LATEST:{train_no}", json.dumps(data))
+            print(f"Updated Search Index for Train {train_no}")
+            continue # Don't add raw updates to the alert history
+
+        # 2. Update Alert History (from Alerts topics)
         if topic == "FRAUD_ALERTS":
-            key = f"fraud:{data.get('ID', data.get('id', '1'))}"
+            key = f"fraud:{data.get('ID', data.get('id', '1'))}:{time.time()}"
             r.set(key, json.dumps(data), ex=600)
-        else:
+        elif topic == "DELAYED_ALERTS":
             key = f"railway:{data.get('TRAIN_NO', 'unknown')}:{time.time()}"
             r.set(key, json.dumps(data), ex=600)
-        print(f"Processed {topic}: {data}")
+            
+        print(f"Processed Alert {topic}: {data}")
     except Exception as e:
         print(f"Error processing message: {e}")
