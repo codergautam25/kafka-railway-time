@@ -359,6 +359,13 @@
                         <div id="train-search-result" style="min-height: 150px; display: flex; align-items: center; justify-content: center; color: #64748b; font-style: italic; border: 2px dashed rgba(255,255,255,0.05); border-radius: 1rem; text-align: center;">
                             Enter a Train Number to see its live status
                         </div>
+                        <div style="margin-top: 1rem; font-size: 0.75rem; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                            <span>Active Live Feeds:</span>
+                            <span style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 0.4rem; cursor: pointer;" onclick="document.getElementById('train-search-input').value='12133'; searchTrain()">12133</span>
+                            <span style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 0.4rem; cursor: pointer;" onclick="document.getElementById('train-search-input').value='12864'; searchTrain()">12864</span>
+                            <span style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 0.4rem; cursor: pointer;" onclick="document.getElementById('train-search-input').value='11301'; searchTrain()">11301</span>
+                            <span style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 0.4rem; cursor: pointer;" onclick="document.getElementById('train-search-input').value='12951'; searchTrain()">12951</span>
+                        </div>
                     </div>
 
                     <div style="background: var(--card-bg); border-radius: 1.5rem; padding: 2rem; border: 1px solid rgba(255,255,255,0.1);">
@@ -564,18 +571,24 @@
                 container.style.display = 'block';
                 container.style.fontStyle = 'normal';
                 container.style.border = 'none';
-                container.innerHTML = `
-                    <div style="background: rgba(56, 189, 248, 0.05); padding: 1.25rem; border-radius: 1rem; border: 1px solid rgba(56, 189, 248, 0.2);">
+                       container.innerHTML = `
+                    <div style="background: rgba(0, 184, 212, 0.05); padding: 1.25rem; border-radius: 1rem; border: 1px solid rgba(0, 184, 212, 0.2);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span style="font-weight: 700; color: var(--accent-color); font-size: 1.1rem;">${data.train_name || 'Train ' + trainNo}</span>
+                            ${data.is_simulated ? 
+                                `<span style="background: rgba(148, 163, 184, 0.1); color: #94a3b8; font-size: 0.6rem; padding: 0.2rem 0.6rem; border-radius: 1rem; border: 1px solid rgba(148, 163, 184, 0.2); text-transform: uppercase; letter-spacing: 0.05em;">Simulated Data</span>` : 
+                                `<span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; font-size: 0.6rem; padding: 0.2rem 0.6rem; border-radius: 1rem; border: 1px solid rgba(34, 197, 94, 0.2); text-transform: uppercase; letter-spacing: 0.05em;">Live Tracking</span>`
+                            }
+                        </div>
                         <table class="inquiry-table">
-                            <tr><th>Train Name</th><td style="font-weight: 800; color: var(--accent-color);">${data.train_name || 'Train ' + trainNo}</td></tr>
                             <tr><th>Route</th><td>${data.source} ➔ ${data.destination}</td></tr>
-                            <tr><th>Current Station</th><td style="font-weight: 700;">${data.station}</td></tr>
+                            <tr><th>Current Station</th><td style="font-weight: 800; color: white;">${data.station}</td></tr>
                             <tr><th>Status</th><td>
                                 <span class="status-pill" style="background: ${data.delay_mins > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}; color: ${data.delay_mins > 0 ? '#ef4444' : '#22c55e'};">
-                                    ${data.delay_mins > 0 ? data.delay_mins + ' mins late' : 'On Time'}
+                                    ${data.delay_mins > 0 ? `${data.delay_mins} mins late` : 'On Time'}
                                 </span>
                             </td></tr>
-                            <tr><th>Last Update</th><td style="color: #64748b; font-size: 0.8rem;">${new Date(parseFloat(data.timestamp)*1000).toLocaleTimeString()}</td></tr>
+                            <tr><th>Last Update</th><td style="color: #64748b; font-size: 0.8rem;">${new Date(parseFloat(data.timestamp) * 1000).toLocaleTimeString()}</td></tr>
                         </table>
                     </div>
                 `;

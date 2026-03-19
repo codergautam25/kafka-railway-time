@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse
 from app.auth import verify_token
 from app.producer import send_event
 import os
+import time
 
 app = FastAPI()
 
@@ -41,8 +42,31 @@ def get_alerts():
 def search_train(train_no: str):
     data = r.get(f"train:LATEST:{train_no}")
     if data:
-        return json.loads(data)
-    return {"error": "Train data not found or not yet indexed"}
+        result = json.loads(data)
+        result["is_simulated"] = False
+        return result
+    
+    # Fallback simulation for any 5-digit train number
+    if train_no.isdigit() and len(train_no) == 5:
+        import hashlib
+        h = int(hashlib.md5(train_no.encode()).hexdigest(), 16)
+        
+        train_names = ["KANCHANJANGA EXP", "COROMANDEL EXP", "TAMIL NADU EXP", "GARIB RATH", "SUPERFAST EXP"]
+        stations = ["Howrah Jn", "New Delhi", "Chennai Central", "Mumbai Central", "Bangalore City"]
+        
+        return {
+            "train_no": train_no,
+            "train_name": train_names[h % len(train_names)],
+            "source": stations[h % len(stations)],
+            "destination": stations[(h+1) % len(stations)],
+            "station": stations[(h+2) % len(stations)],
+            "delay_mins": (h % 120),
+            "status": "In Transit",
+            "timestamp": str(time.time()),
+            "is_simulated": True
+        }
+        
+    return {"error": "Train data not found. Please try a 5-digit train number like 12133 or 11301."}
 
 @app.get("/search/pnr/{pnr}")
 def search_pnr(pnr: str):
